@@ -2,6 +2,8 @@
   "dependencies": {
     "@vis.gl/react-google-maps": "^1.10.0",
     "firebase": "^12.19.0",
-    "lucide-react": "^1.47.0"
+    "lucide-react": "^1.47.0",
+    "mapbox-gl": "^3.31.0",
+    "react-map-gl": "^8.1.3"
   }
 }

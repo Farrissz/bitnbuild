@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import Map, { Marker } from 'react-map-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { subscribeToMemberLocations } from '../services/tripService';
 
 export const TripMap = ({ tripId, currentUserId }) => {
@@ -13,34 +14,38 @@ export const TripMap = ({ tripId, currentUserId }) => {
     return () => unsubscribe();
   }, [tripId]);
 
-  const defaultCenter = locations.length > 0 
-    ? { lat: locations[0].lat, lng: locations[0].lng }
-    : { lat: 8.5241, lng: 76.9366 };
+  const initialViewState = locations.length > 0 
+    ? { latitude: locations[0].lat, longitude: locations[0].lng, zoom: 13 }
+    : { latitude: 8.5241, longitude: 76.9366, zoom: 13 }; // Trivandrum default
 
   return (
     <div style={{ width: '100%', height: '400px', borderRadius: '12px', overflow: 'hidden' }}>
-      <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-        <Map
-          defaultCenter={defaultCenter}
-          defaultZoom={13}
-          mapId="SPIDEY_MAP_ID"
-          gestureHandling="greedy"
-        >
-          {locations.map((loc) => (
-            <AdvancedMarker
-              key={loc.userId}
-              position={{ lat: loc.lat, lng: loc.lng }}
-              title={loc.userName}
-            >
-              <Pin
-                background={loc.userId === currentUserId ? "#2563eb" : "#dc2626"}
-                borderColor="#ffffff"
-                glyphColor="#ffffff"
-              />
-            </AdvancedMarker>
-          ))}
-        </Map>
-      </APIProvider>
+      <Map
+        initialViewState={initialViewState}
+        mapStyle="mapbox://styles/mapbox/streets-v12"
+        mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
+      >
+        {locations.map((loc) => (
+          <Marker
+            key={loc.userId}
+            longitude={loc.lng}
+            latitude={loc.lat}
+            anchor="bottom"
+          >
+            <div 
+              style={{
+                backgroundColor: loc.userId === currentUserId ? "#2563eb" : "#dc2626",
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                border: '2px solid white',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }} 
+              title={loc.userName} 
+            />
+          </Marker>
+        ))}
+      </Map>
     </div>
   );
 };
