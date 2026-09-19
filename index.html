@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Spidey-Sense Transit</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        spidey: {
+                            red: '#ff3333',
+                            reddark: '#cc0000',
+                            blue: '#0066ff',
+                            darkbg: '#0b0f19',
+                            cardbg: '#131c2e',
+                            border: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Subtle Spider-Web / Cyber Grid Background Pattern */
+        .web-grid {
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(255, 51, 51, 0.08) 0%, transparent 60%),
+                radial-gradient(circle at 100% 100%, rgba(0, 102, 255, 0.08) 0%, transparent 50%),
+                linear-gradient(to right, rgba(30, 41, 59, 0.4) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(30, 41, 59, 0.4) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px;
+        }
+
+        /* Hide scrollbars */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .view-section {
+            display: none;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+        
+        .view-section.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid #ff3333;
+            border-right: 3px solid #0066ff;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #0066ff;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #0066ff;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden web-grid">
+
+    <header class="bg-spidey-cardbg/80 backdrop-blur-md border-b border-spidey-border z-20 shrink-0">
+        <div class="h-1 bg-gradient-to-r from-spidey-red via-purple-600 to-spidey-blue"></div>
+        <div class="px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 cursor-pointer" onclick="switchView('view-home')">
+                <div class="w-9 h-9 rounded-xl bg-spidey-red/10 border border-spidey-red/30 flex items-center justify-center text-spidey-red shadow-lg shadow-spidey-red/10">
+                    <i class="fa-solid fa-spider text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold tracking-tight text-white leading-none">Spidey-Sense</h1>
+                    <span class="text-[10px] font-semibold text-spidey-blue uppercase tracking-widest">Transit Sync</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="openNotificationModal()" class="w-9 h-9 rounded-xl bg-spidey-border/50 border border-spidey-border flex items-center justify-center text-slate-300 hover:text-white transition-colors relative">
+                    <i class="fa-regular fa-bell text-sm"></i>
+                    <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-spidey-red"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto pb-24 px-4 pt-4 max-w-lg mx-auto w-full relative">
+        
+        <!-- ================= VIEW 1: HOME / SEARCH ================= -->
+        <section id="view-home" class="view-section active h-full justify-between">
+            <div>
+                <div class="mb-5">
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-spidey-red/10 text-spidey-red border border-spidey-red/20 inline-block mb-2">
+                        <i class="fa-solid fa-bolt mr-1"></i> Multimodal Sync Active
+                    </span>
+                    <h2 class="text-2xl font-extrabold tracking-tight text-white">Where are you web-slinging?</h2>
+                    <p class="text-slate-400 text-xs mt-1">Synchronized local bus, ferry & train schedules.</p>
+                </div>
+
+                <!-- Search Card -->
+                <div class="bg-spidey-cardbg border border-spidey-border rounded-2xl p-4 shadow-xl mb-5 relative">
+                    <div class="absolute left-7 top-11 bottom-11 w-0.5 bg-gradient-to-b from-spidey-blue to-spidey-red opacity-30"></div>
+                    
+                    <div class="flex items-center gap-3.5 mb-4 relative z-10">
+                        <div class="w-6 h-6 rounded-full bg-spidey-blue/20 border border-spidey-blue/40 flex items-center justify-center shrink-0">
+                            <div class="w-2 h-2 rounded-full bg-spidey-blue"></div>
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Origin</label>
+                            <input type="text" id="origin-input" value="Technopark Phase 3" class="w-full text-sm py-0.5 outline-none font-medium bg-transparent text-white border-b border-transparent focus:border-spidey-blue transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3.5 relative z-10">
+                        <div class="w-6 h-6 rounded-full bg-spidey-red/20 border border-spidey-red/40 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-location-dot text-[10px] text-spidey-red"></i>
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Destination</label>
+                            <input type="text" id="destination-input" value="Trivandrum Central Station" class="w-full text-sm py-0.5 outline-none font-medium bg-transparent text-white border-b border-transparent focus:border-spidey-red transition-colors">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mode Selectors -->
+                <div class="mb-6">
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2.5">Preferred Modes</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <label class="flex items-center gap-2.5 bg-spidey-cardbg border border-spidey-border p-3 rounded-xl cursor-pointer hover:border-spidey-red/50 transition-all select-none">
+                            <input type="checkbox" checked class="accent-spidey-red w-4 h-4 rounded">
+                            <span class="text-xs font-medium text-slate-200"><i class="fa-solid fa-train text-spidey-blue mr-1.5"></i> Train + Bus Sync</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 bg-spidey-cardbg border border-spidey-border p-3 rounded-xl cursor-pointer hover:border-spidey-red/50 transition-all select-none">
+                            <input type="checkbox" checked class="accent-spidey-red w-4 h-4 rounded">
+                            <span class="text-xs font-medium text-slate-200"><i class="fa-solid fa-bus text-spidey-red mr-1.5"></i> KSRTC Feeder</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 bg-spidey-cardbg border border-spidey-border p-3 rounded-xl cursor-pointer hover:border-spidey-red/50 transition-all select-none">
+                            <input type="checkbox" checked class="accent-spidey-red w-4 h-4 rounded">
+                            <span class="text-xs font-medium text-slate-200"><i class="fa-solid fa-ship text-cyan-400 mr-1.5"></i> Water Metro / Ferry</span>
+                        </label>
+                        <label class="flex items-center gap-2.5 bg-spidey-cardbg border border-spidey-border p-3 rounded-xl cursor-pointer hover:border-spidey-red/50 transition-all select-none">
+                            <input type="checkbox" class="accent-spidey-red w-4 h-4 rounded">
+                            <span class="text-xs font-medium text-slate-200"><i class="fa-solid fa-car text-amber-500 mr-1.5"></i> Uber Compare</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button id="search-routes-btn" onclick="triggerSearchRoutes()" class="w-full bg-gradient-to-r from-spidey-red to-spidey-blue text-white font-bold py-3.5 rounded-xl shadow-lg shadow-spidey-red/20 hover:shadow-spidey-red/40 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-sm">
+                <span id="search-btn-text">Search Routes</span>
+                <span id="search-loader" class="loader hidden"></span>
+            </button>
+        </section>
+
+        <!-- ================= VIEW 2: RESULTS & PRICES ================= -->
+        <section id="view-results" class="view-section">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="switchView('view-home')" class="w-8 h-8 flex items-center justify-center rounded-xl bg-spidey-cardbg border border-spidey-border text-slate-300 hover:text-white">
+                        <i class="fa-solid fa-arrow-left text-xs"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-base font-bold text-white">Route Options</h2>
+                        <p class="text-[11px] text-slate-400">Technopark ➔ Trivandrum Central</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                    <i class="fa-solid fa-check-circle mr-1"></i> Live Timings
+                </span>
+            </div>
+
+            <!-- Hardcoded Synchronized Route Option (Featured) -->
+            <div class="bg-spidey-cardbg border-2 border-spidey-blue/60 rounded-2xl p-4 shadow-xl mb-3.5 relative overflow-hidden">
+                <div class="absolute -right-6 -top-6 w-20 h-20 bg-spidey-blue/10 rounded-full blur-xl"></div>
+                <div class="flex justify-between items-start mb-2.5">
+                    <div>
+                        <span class="bg-spidey-blue/20 text-spidey-blue border border-spidey-blue/30 text-[10px] font-extrabold px-2 py-0.5 rounded uppercase">✨ Spidey Synchronized</span>
+                        <h3 class="font-bold text-base text-white mt-1">Bus + Train Zero-Wait Sync</h3>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-extrabold text-lg text-emerald-400">₹45</p>
+                        <p class="text-[10px] text-slate-400">Combined cost</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-3.5 bg-spidey-border/30 p-2.5 rounded-xl border border-spidey-border/50">
+                    <span class="flex items-center gap-1"><i class="fa-solid fa-bus text-spidey-red"></i> KSRTC F-12</span>
+                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-500"></i>
+                    <span class="flex items-center gap-1"><i class="fa-solid fa-train text-spidey-blue"></i> Vande Bharat</span>
+                </div>
+
+                <div class="flex items-center justify-between text-xs pt-1 border-t border-spidey-border">
+                    <span class="text-slate-400"><i class="fa-regular fa-clock mr-1 text-spidey-blue"></i> 42 mins total</span>
+                    <button onclick="switchView('view-group')" class="text-spidey-blue font-bold hover:underline">Join Group Trip <i class="fa-solid fa-arrow-right ml-0.5 text-[10px]"></i></button>
+                </div>
+            </div>
+
+            <!-- Alternative Standard Route -->
+            <div class="bg-spidey-cardbg border border-spidey-border rounded-2xl p-4 shadow-md mb-4">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="bg-slate-700/50 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Standard Bus Only</span>
+                        <h3 class="font-bold text-sm text-white mt-1">Direct Express Bus</h3>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-extrabold text-base text-emerald-400">₹35</p>
+                        <p class="text-[10px] text-slate-400">Ticket</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-3">
+                    <span><i class="fa-solid fa-bus mr-1 text-spidey-red"></i> KSRTC Interstate Route 18</span>
+                </div>
+                <div class="flex items-center justify-between text-xs pt-2 border-t border-spidey-border">
+                    <span class="text-slate-400"><i class="fa-regular fa-clock mr-1"></i> 65 mins</span>
+                    <span class="text-slate-500 text-[11px]">Unsynchronized schedule</span>
+                </div>
+            </div>
+
+            <!-- Price Comparison Grid -->
+            <h3 class="font-bold text-slate-300 mb-2.5 text-xs uppercase tracking-wider">Price Comparison Matrix</h3>
+            <div class="grid grid-cols-3 gap-2.5 mb-5">
+                <div class="bg-spidey-cardbg border border-spidey-border p-3 rounded-xl text-center">
+                    <i class="fa-solid fa-car text-amber-500 text-sm mb-1"></i>
+                    <p class="text-[11px] font-semibold text-slate-300">Uber Go</p>
+                    <p class="text-sm font-extrabold text-white mt-0.5">₹320</p>
+                </div>
+                <div class="bg-spidey-cardbg border border-spidey-blue/50 p-3 rounded-xl text-center shadow-lg shadow-spidey-blue/10 ring-1 ring-spidey-blue/30">
+                    <i class="fa-solid fa-bolt text-spidey-blue text-sm mb-1"></i>
+                    <p class="text-[11px] font-semibold text-spidey-blue">Sync Pass</p>
+                    <p class="text-sm font-extrabold text-white mt-0.5">₹45</p>
+                </div>
+                <div class="bg-spidey-cardbg border border-spidey-border p-3 rounded-xl text-center">
+                    <i class="fa-solid fa-bus text-spidey-red text-sm mb-1"></i>
+                    <p class="text-[11px] font-semibold text-slate-300">Bus Only</p>
+                    <p class="text-sm font-extrabold text-white mt-0.5">₹35</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= VIEW 3: GROUP TRIPS & LOCATION ================= -->
+        <section id="view-group" class="view-section">
+            <div class="mb-4">
+                <h2 class="text-xl font-bold text-white mb-1">Squad Web-Share</h2>
+                <p class="text-xs text-slate-400">Live location sharing & multi-stop trip sync.</p>
+            </div>
+            
+            <!-- Trip Code Creation / Joining -->
+            <div class="bg-spidey-cardbg border border-spidey-border rounded-2xl p-4 mb-4">
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5">Join or Create Trip</h3>
+                <div class="flex gap-2">
+                    <input type="text" id="trip-code-input" placeholder="Enter Code (e.g. WEB-2099)" class="flex-1 bg-spidey-dark border border-spidey-border rounded-xl px-3.5 py-2.5 text-xs outline-none text-white focus:border-spidey-blue">
+                    <button onclick="handleJoinTrip()" class="bg-spidey-blue hover:bg-blue-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md">Join</button>
+                </div>
+            </div>
+
+            <!-- Active Members -->
+            <div class="bg-spidey-cardbg border border-spidey-border rounded-2xl p-4 mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Active Squad Members</h3>
+                    <span class="bg-emerald-500/10 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">3 Connected</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex -space-x-2">
+                        <img src="https://ui-avatars.com/api/?name=Peter+Parker&background=ff3333&color=fff&rounded=true" class="w-9 h-9 border-2 border-spidey-cardbg rounded-full">
+                        <img src="https://ui-avatars.com/api/?name=Miles+Morales&background=0066ff&color=fff&rounded=true" class="w-9 h-9 border-2 border-spidey-cardbg rounded-full">
+                        <img src="https://ui-avatars.com/api/?name=Gwen+Stacy&background=334155&color=fff&rounded=true" class="w-9 h-9 border-2 border-spidey-cardbg rounded-full">
+                    </div>
+                    <span class="text-xs text-slate-400 font-medium">Syncing GPS every 10s</span>
+                </div>
+            </div>
+
+            <!-- Location Sharing Toggle -->
+            <div class="bg-spidey-cardbg border border-spidey-border rounded-2xl p-4 mb-4 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xs font-bold text-white">Broadcast My Location</h3>
+                    <p class="text-[11px] text-slate-400">Secure end-to-end trip sharing</p>
+                </div>
+                <div class="relative inline-block w-12 align-middle select-none">
+                    <input type="checkbox" id="location-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-700 z-10" onchange="toggleLocationBroadcast(this)"/>
+                    <label for="location-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-700 cursor-pointer"></label>
+                </div>
+            </div>
+
+            <!-- Simulated Map View -->
+            <div class="bg-spidey-cardbg border border-spidey-border rounded-2xl h-48 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute inset-0 opacity-20 web-grid"></div>
+                <i class="fa-solid fa-map-location-dot text-3xl text-spidey-blue mb-2 animate-pulse"></i>
+                <p class="text-xs font-semibold text-slate-300">Live Map SDK Container</p>
+                <p class="text-[10px] text-slate-500 mt-0.5">Connected to Google Maps & Firestore</p>
+                <div id="map-live-badge" class="absolute top-3 right-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold px-2.5 py-1 rounded-full hidden">
+                    <i class="fa-solid fa-satellite-dish mr-1 animate-ping"></i> Live Pins Active
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= VIEW 4: REVIEWS & SPLIT PAY ================= -->
+        <section id="view-results-reviews" class="view-section">
+            <div class="mb-4">
+                <h2 class="text-xl font-bold text-white mb-1">Reviews & Bill Split</h2>
+                <p class="text-xs text-slate-400">Crowdsourced route ratings & split calculations.</p>
+            </div>
+
+            <!-- Split Payment Calculator -->
+            <div class="bg-gradient-to-br from-spidey-cardbg to-spidey-dark border border-spidey-border rounded-2xl p-4 mb-5 shadow-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs font-bold text-spidey-blue uppercase tracking-wider"><i class="fa-solid fa-receipt mr-1"></i> Group Split Calculator</h3>
+                    <span class="text-xs font-bold text-white">Total: ₹320 (Uber)</span>
+                </div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-slate-300">Number of Commuters</span>
+                    <span class="font-extrabold text-base text-spidey-red" id="split-count-label">2 People</span>
+                </div>
+                <input type="range" min="1" max="6" value="2" id="split-slider" class="w-full accent-spidey-red mb-3" oninput="updateSplitCalculator()">
+                <div class="flex justify-between items-center pt-3 border-t border-spidey-border">
+                    <span class="text-xs text-slate-400">Per Person Share</span>
+                    <span class="text-lg font-black text-emerald-400" id="split-per-person">₹160</span>
+                </div>
+            </div>
+
+            <!-- Review Submission Form -->
+            <div class="bg-spidey-cardbg border border-spidey-border rounded-2xl p-4 mb-5">
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5">Rate Your Transfer Experience</h3>
+                <div class="flex gap-2 text-xl text-slate-600 mb-3" id="interactive-stars">
+                    <i class="fa-solid fa-star cursor-pointer hover:text-amber-400 transition-colors" onclick="setReviewRating(1)"></i>
+                    <i class="fa-solid fa-star cursor-pointer hover:text-amber-400 transition-colors" onclick="setReviewRating(2)"></i>
+                    <i class="fa-solid fa-star cursor-pointer hover:text-amber-400 transition-colors" onclick="setReviewRating(3)"></i>
+                    <i class="fa-solid fa-star cursor-pointer hover:text-amber-400 transition-colors" onclick="setReviewRating(4)"></i>
+                    <i class="fa-solid fa-star cursor-pointer hover:text-amber-400 transition-colors" onclick="setReviewRating(5)"></i>
+                </div>
+                <textarea id="review-comment-input" rows="2" placeholder="Was the bus timed correctly with the train arrival?" class="w-full bg-spidey-dark border border-spidey-border rounded-xl p-3 text-xs outline-none text-white focus:border-spidey-red resize-none mb-3"></textarea>
+                <button onclick="submitUserReview()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all border border-spidey-border">
+                    Submit Community Review
+                </button>
+            </div>
+
+            <!-- Recent Reviews List -->
+            <h3 class="font-bold text-slate-300 mb-2.5 text-xs uppercase tracking-wider">Crowdsourced Logs</h3>
+            <div class="flex flex-col gap-2.5">
+                <div class="bg-spidey-cardbg border border-spidey-border p-3.5 rounded-xl">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-xs font-bold text-white flex items-center gap-1.5"><img src="https://ui-avatars.com/api/?name=Miles+M&background=0066ff&color=fff&rounded=true" class="w-5 h-5 rounded-full"> Miles Morales</span>
+                        <div class="text-amber-400 text-[10px]">
+                            <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-300">"The KSRTC bus arrived right as the train pulled in! Zero waiting time at the junction."</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <nav class="bg-spidey-cardbg/90 backdrop-blur-md border-t border-spidey-border px-4 py-2.5 fixed bottom-0 w-full z-20">
+        <div class="flex justify-around items-center max-w-md mx-auto">
+            <button onclick="switchView('view-home')" class="nav-btn flex flex-col items-center gap-1 text-spidey-red transition-colors w-16" data-target="view-home">
+                <i class="fa-solid fa-magnifying-glass text-base"></i>
+                <span class="text-[10px] font-semibold">Search</span>
+            </button>
+            <button onclick="switchView('view-results')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors w-16" data-target="view-results">
+                <i class="fa-solid fa-route text-base"></i>
+                <span class="text-[10px] font-semibold">Routes</span>
+            </button>
+            <button onclick="switchView('view-group')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors w-16" data-target="view-group">
+                <i class="fa-solid fa-users text-base"></i>
+                <span class="text-[10px] font-semibold">Squad</span>
+            </button>
+            <button onclick="switchView('view-results-reviews')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-colors w-16" data-target="view-results-reviews">
+                <i class="fa-solid fa-star text-base"></i>
+                <span class="text-[10px] font-semibold">Reviews</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        // Tab Switcher
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.target === viewId) {
+                    btn.classList.remove('text-slate-400');
+                    btn.classList.add('text-spidey-red');
+                } else {
+                    btn.classList.remove('text-spidey-red');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+        }
+
+        // Search trigger with mock loading
+        function triggerSearchRoutes() {
+            const origin = document.getElementById('origin-input').value;
+            const dest = document.getElementById('destination-input').value;
+            
+            const btn = document.getElementById('search-routes-btn');
+            const btnText = document.getElementById('search-btn-text');
+            const loader = document.getElementById('search-loader');
+
+            btn.classList.add('opacity-80');
+            btnText.innerText = "Sensing Transit Grid...";
+            loader.classList.remove('hidden');
+
+            // Hook for Person 1
+            if (typeof window.getRoutesFromAPI === 'function') {
+                window.getRoutesFromAPI(origin, dest);
+            }
+
+            setTimeout(() => {
+                btn.classList.remove('opacity-80');
+                btnText.innerText = "Search Routes";
+                loader.classList.add('hidden');
+                switchView('view-results');
+            }, 800);
+        }
+
+        // Split Calculator
+        function updateSplitCalculator() {
+            const count = document.getElementById('split-slider').value;
+            document.getElementById('split-count-label').innerText = count + (count == 1 ? ' Person' : ' People');
+            const perPerson = Math.round(320 / count);
+            document.getElementById('split-per-person').innerText = '₹' + perPerson;
+        }
+
+        let selectedRating = 0;
+        function setReviewRating(stars) {
+            selectedRating = stars;
+            const starsContainer = document.getElementById('interactive-stars').children;
+            for(let i=0; i<5; i++) {
+                if(i < stars) {
+                    starsContainer[i].classList.add('text-amber-400');
+                    starsContainer[i].classList.remove('text-slate-600');
+                } else {
+                    starsContainer[i].classList.remove('text-amber-400');
+                    starsContainer[i].classList.add('text-slate-600');
+                }
+            }
+        }
+
+        function submitUserReview() {
+            const comment = document.getElementById('review-comment-input').value;
+            if(selectedRating === 0) {
+                showToast("Please select star rating first!");
+                return;
+            }
+            if(typeof window.saveReviewToFirestore === 'function') {
+                window.saveReviewToFirestore('route_technopark_trivandrum', selectedRating, comment);
+            }
+            showToast("Review published to crowdsourced network!");
+            document.getElementById('review-comment-input').value = '';
+            setReviewRating(0);
+        }
+
+        function handleJoinTrip() {
+            const code = document.getElementById('trip-code-input').value;
+            if(!code) {
+                showToast("Please enter a valid trip code!");
+                return;
+            }
+            if(typeof window.joinTripFirestore === 'function') {
+                window.joinTripFirestore(code);
+            }
+            showToast("Successfully joined trip " + code + "!");
+        }
+
+        function toggleLocationBroadcast(checkbox) {
+            const badge = document.getElementById('map-live-badge');
+            if(checkbox.checked) {
+                badge.classList.remove('hidden');
+                if(typeof window.startLocationSharing === 'function') window.startLocationSharing(true);
+            } else {
+                badge.classList.add('hidden');
+                if(typeof window.startLocationSharing === 'function') window.startLocationSharing(false);
+            }
+        }
+
+        function openNotificationModal() {
+            showToast("No new transit alerts. All systems nominal.");
+        }
+
+        function showToast(msg) {
+            const div = document.createElement('div');
+            div.className = 'fixed top-16 left-1/2 -translate-x-1/2 bg-slate-900 border border-spidey-red text-white text-xs px-4 py-2 rounded-xl shadow-2xl z-50 transition-all';
+            div.innerHTML = `<i class="fa-solid fa-spider text-spidey-red mr-1.5"></i> ${msg}`;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2500);
+        }
+
+        // ========================================================
+        // GLOBAL HOOKS FOR TEAMMATES (PERSONS 1, 2, AND 3)
+        // ========================================================
+        window.getRoutesFromAPI = function(origin, destination) {
+            console.log("[Person 1 Integration] getRoutes called with:", origin, destination);
+            // Drop your Google Directions / Distance Matrix API implementation here
+        };
+
+        window.joinTripFirestore = function(tripCode) {
+            console.log("[Person 2 Integration] Joining trip code in Firestore:", tripCode);
+            // Drop your Firestore trip join query here
+        };
+
+        window.startLocationSharing = function(isLive) {
+            console.log("[Person 2 Integration] GPS background write toggle:", isLive);
+            // Drop your 10s interval Firestore geolocation writer here
+        };
+
+        window.saveReviewToFirestore = function(routeId, rating, comment) {
+            console.log("[Person 3 Integration] Saving review:", { routeId, rating, comment });
+            // Drop your Firestore review collection write here
+        };
+    </script>
+</body>
+</html>
