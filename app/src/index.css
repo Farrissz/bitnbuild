@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/* Person 4's theme, moved from the inline tailwind.config into Tailwind v4 tokens. */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-spidey-red: #ff3333;
+  --color-spidey-reddark: #cc0000;
+  --color-spidey-blue: #0066ff;
+  --color-spidey-darkbg: #0b0f19;
+  --color-spidey-dark: #0b0f19; /* used by the UI but missing from the original config */
+  --color-spidey-cardbg: #131c2e;
+  --color-spidey-border: #1e293b;
+}
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body {
+    font-family: var(--font-sans);
+    background-color: #0b0f19;
+    color: #f8fafc;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:not(:disabled), [role="button"] { cursor: pointer; }
+  :focus-visible { outline: 2px solid #0066ff; outline-offset: 2px; border-radius: 6px; }
+}
+
+/* Subtle spider-web / cyber grid background */
+.web-grid {
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(255, 51, 51, 0.08) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(0, 102, 255, 0.08) 0%, transparent 50%),
+    linear-gradient(to right, rgba(30, 41, 59, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30, 41, 59, 0.4) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px;
+}
+
+::-webkit-scrollbar { display: none; }
+
+.view-section { display: none; animation: fadeIn 0.25s ease-in-out; }
+.view-section.active { display: flex; flex-direction: column; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.loader {
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top: 3px solid #ff3333;
+  border-right: 3px solid #0066ff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .view-section { animation: none; }
+  .loader { animation-duration: 2s; }
+}

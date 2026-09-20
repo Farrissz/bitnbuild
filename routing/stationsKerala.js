@@ -1,0 +1,36 @@
+// Fallback list of main Kerala railway stations, used only when the Overpass (OpenStreetMap) lookup fails.
+// Coordinates are approximate (station building, ±1 km) — good enough to pick the nearest station.
+const KERALA_STATIONS = [
+  { name: 'Thiruvananthapuram Central', lat: 8.4875, lng: 76.9525 },
+  { name: 'Kochuveli', lat: 8.5060, lng: 76.9110 },
+  { name: 'Kazhakkoottam', lat: 8.5680, lng: 76.8740 },
+  { name: 'Varkala Sivagiri', lat: 8.7337, lng: 76.7240 },
+  { name: 'Kollam Junction', lat: 8.8865, lng: 76.5955 },
+  { name: 'Karunagappalli', lat: 9.0580, lng: 76.5350 },
+  { name: 'Kayamkulam Junction', lat: 9.1740, lng: 76.5020 },
+  { name: 'Punalur', lat: 9.0170, lng: 76.9280 },
+  { name: 'Chengannur', lat: 9.3190, lng: 76.6120 },
+  { name: 'Tiruvalla', lat: 9.3830, lng: 76.5750 },
+  { name: 'Changanassery', lat: 9.4460, lng: 76.5440 },
+  { name: 'Kottayam', lat: 9.5940, lng: 76.5300 },
+  { name: 'Alappuzha', lat: 9.4910, lng: 76.3200 },
+  { name: 'Cherthala', lat: 9.6860, lng: 76.3400 },
+  { name: 'Tripunithura', lat: 9.9480, lng: 76.3500 },
+  { name: 'Ernakulam Junction', lat: 9.9690, lng: 76.2910 },
+  { name: 'Ernakulam Town', lat: 9.9910, lng: 76.2890 },
+  { name: 'Aluva', lat: 10.1090, lng: 76.3570 },
+  { name: 'Angamaly', lat: 10.1890, lng: 76.3860 },
+  { name: 'Chalakudi', lat: 10.3040, lng: 76.3350 },
+  { name: 'Thrissur', lat: 10.5150, lng: 76.2070 },
+  { name: 'Guruvayur', lat: 10.5940, lng: 76.0400 },
+  { name: 'Shoranur Junction', lat: 10.7640, lng: 76.2740 },
+  { name: 'Palakkad Junction', lat: 10.7970, lng: 76.6380 },
+  { name: 'Tirur', lat: 10.9150, lng: 75.9220 },
+  { name: 'Kozhikode', lat: 11.2480, lng: 75.7810 },
+  { name: 'Vadakara', lat: 11.6060, lng: 75.5890 },
+  { name: 'Thalassery', lat: 11.7500, lng: 75.4890 },
+  { name: 'Kannur', lat: 11.8720, lng: 75.3670 },
+  { name: 'Kasaragod', lat: 12.4930, lng: 74.9900 },
+];
+
+module.exports = { KERALA_STATIONS };

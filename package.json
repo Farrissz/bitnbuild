@@ -1,0 +1,14 @@
+{
+  "name": "spidey-sense-transit",
+  "private": true,
+  "description": "CyberBytes — Bit n' Build 2026: multimodal transit sync app",
+  "scripts": {
+    "setup": "npm install && npm --prefix routing install && npm --prefix app install",
+    "dev": "concurrently -k -n api,app -c red,blue \"npm --prefix routing start\" \"npm --prefix app run dev\"",
+    "build": "npm --prefix app run build",
+    "start": "npm --prefix routing start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}

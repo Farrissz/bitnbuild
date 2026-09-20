@@ -74,6 +74,14 @@ As a plain module (no server): `const { getRoutes } = require('./routes'); await
 
 To add or change a demo pair, copy a block in `DEMO_PAIRS` and edit the `match` keywords and leg minutes.
 
+## Any other trip: estimated routes (no key needed)
+
+When a trip isn't a demo pair and Google returns nothing (or there's no key), `estimate.js` builds options from
+OpenStreetMap: Photon finds the places, OSRM gives the road distance, Overpass finds the nearest railway stations
+(falling back to `stationsKerala.js`). Options: cab, auto (≤ 15 km), walk (≤ 3 km), bus, and train with an auto or
+local-bus connection. They come back with `source: 'estimate'` and are never `synced`. Turn off with `USE_ESTIMATES=false`.
+
 ## Attribution
 
 When showing Google route results, display "Powered by Google, ©2026 Google" (the Routes API doesn't return it).
+When showing estimated routes, display "© OpenStreetMap contributors".

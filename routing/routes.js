@@ -10,9 +10,12 @@
 // Uses Google Routes API (computeRoutes) — the replacement for the legacy
 // Directions / Distance Matrix APIs, which new Cloud projects can't enable.
 // Falls back to demo data (demoData.js) when there's no key, USE_MOCK=true,
-// or Google returns nothing for a demo pair.
+// or Google returns nothing for a demo pair. Any other trip gets estimated options
+// (estimate.js, OpenStreetMap-based) for whatever Google didn't cover.
 
 const { findDemoPair, buildDemoRoutes, demoPlaceNames } = require('./demoData');
+const { estimateRoutes } = require('./estimate');
+const { suggestPlaces } = require('./geo');
 
 const ROUTES_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 const AUTOCOMPLETE_URL = 'https://places.googleapis.com/v1/places:autocomplete';
@@ -95,7 +98,7 @@ function classifyMode(cats) {
   return 'transit';
 }
 
-// Adds formatted fields; every route (Google or demo) goes through here.
+// Adds formatted fields; every route (Google, demo or estimate) goes through here.
 function finish(route, now) {
   const dep = new Date(route.departure);
   const arr = new Date(route.arrival);
@@ -296,7 +299,7 @@ async function planRoutes(origin, dest, opts = {}) {
   let routes = [];
 
   const mock = opts.mock ?? forceMock();
-  if (!mock && !apiKey()) warnings.push('GOOGLE_MAPS_API_KEY not set — demo data only.');
+  if (!mock && !apiKey()) warnings.push('GOOGLE_MAPS_API_KEY not set — using demo trips and estimated routes.');
 
   if (!mock && apiKey()) {
     const [drive, transit] = await Promise.allSettled([
@@ -319,6 +322,22 @@ async function planRoutes(origin, dest, opts = {}) {
     }
   }
 
+  // Any other trip: fill the gaps with estimates (no timetable, so never marked synced).
+  const hasDrive = routes.some((r) => r.mode === 'driving');
+  const hasTransit = routes.some((r) => r.mode !== 'driving');
+  if (!demo && (!hasDrive || !hasTransit) && String(process.env.USE_ESTIMATES).toLowerCase() !== 'false') {
+    try {
+      const est = await estimateRoutes(origin, dest, now);
+      warnings.push(...est.warnings);
+      for (const r of est.routes) {
+        const driveLike = r.mode === 'driving' || r.mode === 'auto';
+        if (driveLike ? !hasDrive : !hasTransit) routes.push(finish(r, now));
+      }
+    } catch (e) {
+      warnings.push(`Estimated routes unavailable: ${e.message}`);
+    }
+  }
+
   if (opts.modes && opts.modes.length) routes = routes.filter((r) => opts.modes.includes(r.mode));
   routes.sort((a, b) => Date.parse(a.arrival) - Date.parse(b.arrival));
   routes = routes.map((r, i) => ({ id: `${r.source}-${r.mode}-${i + 1}`, ...r }));
@@ -337,7 +356,12 @@ async function autocomplete(input) {
   const demoHits = demoPlaceNames()
     .filter((n) => !q || n.toLowerCase().includes(q.toLowerCase()))
     .map((n) => ({ description: n, placeId: null, source: 'demo' }));
-  if (!q || !apiKey() || forceMock()) return demoHits;
+  const withOsm = async () => {
+    const osm = await suggestPlaces(q);
+    return [...demoHits, ...osm.filter((h) => !demoHits.some((d) => d.description === h.description))];
+  };
+  if (!q) return demoHits;
+  if (!apiKey() || forceMock()) return withOsm();
 
   try {
     const res = await fetch(AUTOCOMPLETE_URL, {
@@ -357,7 +381,7 @@ async function autocomplete(input) {
     return [...demoHits, ...hits];
   } catch (e) {
     console.warn('Autocomplete failed:', e.message);
-    return demoHits;
+    return withOsm();
   }
 }
 
