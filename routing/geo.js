@@ -63,38 +63,146 @@ function photonLabel(p) {
   return parts.filter((x, i) => x && parts.indexOf(x) === i).join(', ');
 }
 
+// ---------- Kerala only ----------
+// Places outside Kerala are rejected. Set LIMIT_TO_KERALA=false to allow anywhere.
+const KERALA = { minLat: 8.15, maxLat: 12.85, minLng: 74.8, maxLng: 77.45 };
+const keralaOnly = () => String(process.env.LIMIT_TO_KERALA).toLowerCase() !== 'false';
+const inKeralaBox = (p) =>
+  p.lat >= KERALA.minLat && p.lat <= KERALA.maxLat && p.lng >= KERALA.minLng && p.lng <= KERALA.maxLng;
+const isKeralaState = (state) => /kerala|കേരളം/i.test(String(state || ''));
+function inKerala(p, state) {
+  if (!keralaOnly()) return true;
+  if (!inKeralaBox(p)) return false;
+  return state ? isKeralaState(state) : true; // the box also covers bits of Tamil Nadu and Karnataka
+}
+const photonArea = () =>
+  keralaOnly()
+    ? `&bbox=${KERALA.minLng},${KERALA.minLat},${KERALA.maxLng},${KERALA.maxLat}`
+    : `&lat=${biasLat()}&lon=${biasLng()}`;
+
+// Names of places outside Kerala. Checked against the whole search text, so a Kerala place that
+// merely contains one of these words ("UAE Exchange, Kochi") still works.
+const OUTSIDE_KERALA = new Set([
+  'oman', 'muscat', 'salalah', 'sohar', 'nizwa', 'uae', 'u a e', 'united arab emirates', 'emirates', 'dubai',
+  'abu dhabi', 'sharjah', 'ajman', 'fujairah', 'ras al khaimah', 'al ain', 'qatar', 'doha', 'saudi', 'saudi arabia',
+  'ksa', 'riyadh', 'jeddah', 'dammam', 'kuwait', 'bahrain', 'manama', 'gcc', 'gulf', 'usa', 'us', 'america',
+  'united states', 'uk', 'united kingdom', 'england', 'london', 'canada', 'australia', 'singapore', 'malaysia',
+  'sri lanka', 'maldives', 'nepal', 'bangladesh', 'pakistan', 'china', 'japan', 'germany', 'europe', 'asia', 'africa',
+  'india', 'bharat', 'tamil nadu', 'tamilnadu', 'karnataka', 'andhra pradesh', 'telangana', 'maharashtra', 'goa',
+  'gujarat', 'rajasthan', 'punjab', 'delhi', 'new delhi', 'west bengal', 'bihar', 'odisha', 'uttar pradesh',
+  'madhya pradesh', 'assam', 'puducherry', 'pondicherry', 'lakshadweep', 'chennai', 'madras', 'bangalore',
+  'bengaluru', 'mumbai', 'bombay', 'hyderabad', 'pune', 'kolkata', 'calcutta', 'coimbatore', 'madurai', 'trichy',
+  'tiruchirappalli', 'salem', 'erode', 'tirunelveli', 'kanyakumari', 'nagercoil', 'ooty', 'mysore', 'mysuru',
+  'mangalore', 'mangaluru', 'udupi', 'coorg', 'kodagu',
+]);
+const TOO_BROAD = new Set(['kerala', 'keralam', 'കേരളം']);
+const normName = (s) => String(s || '').toLowerCase().replace(/[^a-z\u0d00-\u0d7f]+/g, ' ').trim();
+
+// Why a search text can't be used, before looking anything up: 'outside', 'broad', or null.
+function rejectReason(text) {
+  if (!keralaOnly()) return null;
+  const n = normName(text);
+  if (OUTSIDE_KERALA.has(n)) return 'outside';
+  if (TOO_BROAD.has(n)) return 'broad';
+  return null;
+}
+
+// ---------- does the result match what was typed? ----------
+// Photon always returns its closest guess, even for gibberish, so check the name is close to the query.
+const ALIASES = {
+  trivandrum: 'thiruvananthapuram', tvm: 'thiruvananthapuram', alleppey: 'alappuzha', calicut: 'kozhikode',
+  quilon: 'kollam', cochin: 'kochi', trichur: 'thrissur', palghat: 'palakkad', cannanore: 'kannur',
+  tellicherry: 'thalassery', badagara: 'vadakara', kasargod: 'kasaragod', changanacherry: 'changanassery',
+};
+const GENERIC = new Set([
+  'road', 'rd', 'junction', 'jn', 'jct', 'station', 'railway', 'bus', 'stand', 'stop', 'terminal', 'nagar', 'street',
+  'st', 'near', 'the', 'and', 'kerala', 'india', 'city', 'town', 'east', 'west', 'north', 'south', 'new', 'old',
+]);
+const words = (s) =>
+  String(s || '').toLowerCase().replace(/[^a-z0-9\u0d00-\u0d7f]+/g, ' ').split(' ').filter(Boolean);
+
+function similarity(a, b) {
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return 0;
+  const grams = (w) => Array.from({ length: w.length - 1 }, (_, i) => w.slice(i, i + 2));
+  const A = grams(a);
+  const pool = grams(b);
+  const total = A.length + pool.length;
+  let hits = 0;
+  for (const g of A) {
+    const i = pool.indexOf(g);
+    if (i >= 0) { hits += 1; pool.splice(i, 1); }
+  }
+  return (2 * hits) / total;
+}
+
+function matchesQuery(query, names) {
+  const all = words(query).map((w) => ALIASES[w] || w).filter((w) => /[a-z\u0d00-\u0d7f]{3,}/.test(w));
+  if (!all.length) return false; // "67", "12b" and similar can't be checked
+  const key = all.filter((w) => !GENERIC.has(w));
+  const target = words(names.filter(Boolean).join(' '));
+  return (key.length ? key : all).some((q) => target.some((t) => similarity(q, t) >= 0.7 || (q.length >= 4 && t.startsWith(q))));
+}
+
+// Nominatim allows at most one request per second.
+let nominatimQueue = Promise.resolve();
+const nominatimSlot = () => {
+  const slot = nominatimQueue.then(() => new Promise((r) => setTimeout(r, 1100)));
+  nominatimQueue = slot;
+  return nominatimQueue;
+};
+
 // ---------- geocoding ----------
 async function geocode(input) {
   if (input && typeof input === 'object' && 'lat' in input) {
-    return { lat: Number(input.lat), lng: Number(input.lng), label: input.label || 'Pinned location' };
+    const p = { lat: Number(input.lat), lng: Number(input.lng), label: input.label || 'Pinned location' };
+    return inKerala(p) ? p : null;
   }
   const text = String(input || '').trim();
-  if (!text) return null;
+  if (!text || rejectReason(text)) return null;
   const m = text.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
-  if (m) return { lat: Number(m[1]), lng: Number(m[2]), label: 'Your location' };
+  if (m) {
+    const p = { lat: Number(m[1]), lng: Number(m[2]), label: 'Your location' };
+    return inKerala(p) ? p : null;
+  }
 
   return cached(`geo:${text.toLowerCase()}`, 24 * 3600e3, async () => {
     if (!isDown('photon')) {
       try {
-        const url = `${PHOTON_URL}?q=${encodeURIComponent(text)}&limit=1&lang=en&lat=${biasLat()}&lon=${biasLng()}`;
+        const url = `${PHOTON_URL}?q=${encodeURIComponent(text)}&limit=5&lang=en${photonArea()}`;
         const data = await getJson(url);
-        const f = data.features && data.features[0];
-        if (f) return { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], label: shortLabel(text) };
+        for (const f of data.features || []) {
+          const pr = f.properties || {};
+          const p = { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] };
+          if (inKerala(p, pr.state) && matchesQuery(text, [pr.name, pr.street, pr.locality, pr.district, pr.city, pr.county])) {
+            return { ...p, label: shortLabel(text) };
+          }
+        }
       } catch (e) {
         markDown('photon');
         console.warn('Photon geocode failed:', e.message);
       }
     }
-    try {
-      const cc = process.env.REGION_CODE ? `&countrycodes=${process.env.REGION_CODE.toLowerCase()}` : '';
-      const data = await getJson(`${NOMINATIM_URL}?format=jsonv2&limit=1${cc}&q=${encodeURIComponent(text)}`);
-      if (data[0]) return { lat: Number(data[0].lat), lng: Number(data[0].lon), label: shortLabel(text) };
-    } catch (e) {
-      console.warn('Nominatim geocode failed:', e.message);
+    // Nominatim matches exact and alternative names (not fuzzy), so it's a good second opinion.
+    if (!isDown('nominatim') && /[a-z\u0d00-\u0d7f]{3,}/i.test(text)) {
+      try {
+        await nominatimSlot();
+        const area = keralaOnly()
+          ? `&viewbox=${KERALA.minLng},${KERALA.maxLat},${KERALA.maxLng},${KERALA.minLat}&bounded=1&countrycodes=in`
+          : '';
+        const data = await getJson(`${NOMINATIM_URL}?format=jsonv2&addressdetails=1&limit=3${area}&q=${encodeURIComponent(text)}`);
+        for (const r of data || []) {
+          const p = { lat: Number(r.lat), lng: Number(r.lon) };
+          if (inKerala(p, r.address && r.address.state)) return { ...p, label: shortLabel(text) };
+        }
+      } catch (e) {
+        markDown('nominatim');
+        console.warn('Nominatim geocode failed:', e.message);
+      }
     }
     // Offline fallback: a Kerala station name inside the text ("Kottayam", "Ernakulam Junction").
     const t = text.toLowerCase();
-    const st = KERALA_STATIONS.find((x) => t.includes(x.name.toLowerCase()) || x.name.toLowerCase().startsWith(t));
+    const st = KERALA_STATIONS.find((x) => t.includes(x.name.toLowerCase()) || (t.length >= 4 && x.name.toLowerCase().startsWith(t)));
     return st ? { lat: st.lat, lng: st.lng, label: shortLabel(text) } : null;
   });
 }
@@ -104,12 +212,14 @@ async function suggestPlaces(text) {
   if (q.length < 3 || isDown('photon')) return [];
   try {
     return await cached(`suggest:${q.toLowerCase()}`, 3600e3, async () => {
-      const url = `${PHOTON_URL}?q=${encodeURIComponent(q)}&limit=6&lang=en&lat=${biasLat()}&lon=${biasLng()}`;
+      const url = `${PHOTON_URL}?q=${encodeURIComponent(q)}&limit=8&lang=en${photonArea()}`;
       const data = await getJson(url, {}, 5000);
       const seen = new Set();
       return (data.features || [])
+        .filter((f) => inKerala({ lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] }, f.properties?.state))
         .map((f) => photonLabel(f.properties || {}))
         .filter((d) => d && !seen.has(d) && seen.add(d))
+        .slice(0, 6)
         .map((description) => ({ description, placeId: null, source: 'osm' }));
     });
   } catch (e) {
@@ -187,4 +297,4 @@ async function nearestStations(a, b) {
   return { from: nearest(KERALA_STATIONS, a), to: nearest(KERALA_STATIONS, b), source: 'built-in' };
 }
 
-module.exports = { geocode, suggestPlaces, roadRoute, nearestStations, haversineKm };
+module.exports = { geocode, suggestPlaces, roadRoute, nearestStations, haversineKm, matchesQuery, inKerala, rejectReason };

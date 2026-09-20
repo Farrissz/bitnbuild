@@ -4,7 +4,7 @@
 // Routes are marked source: 'estimate' and are never flagged as synced.
 // Output uses the same option/leg format as demoData.js, so it runs through the same builder.
 
-const { geocode, roadRoute, nearestStations, haversineKm } = require('./geo');
+const { geocode, roadRoute, nearestStations, haversineKm, rejectReason } = require('./geo');
 const { buildDemoRoutes } = require('./demoData');
 
 // Typical Kerala speeds (km/h) and waits (min). Tune these for your demo.
@@ -95,8 +95,14 @@ function buildOptions(o, d, road, st) {
 async function estimateRoutes(origin, dest, now) {
   const warnings = [];
   const [o, d] = await Promise.all([geocode(origin), geocode(dest)]);
-  if (!o) warnings.push(`Couldn’t find “${origin}”. Try a town, station or landmark name.`);
-  if (!d) warnings.push(`Couldn’t find “${dest}”. Try a town, station or landmark name.`);
+  const why = (text) => {
+    const r = rejectReason(text);
+    if (r === 'outside') return `“${text}” isn’t in Kerala. This app plans trips within Kerala.`;
+    if (r === 'broad') return `“${text}” is too broad. Type a town, station or landmark.`;
+    return `Couldn’t find “${text}” in Kerala. Try a town, station or landmark name.`;
+  };
+  if (!o) warnings.push(why(origin));
+  if (!d) warnings.push(why(dest));
   if (!o || !d) return { routes: [], warnings };
   if (haversineKm(o, d) < 0.2) return { routes: [], warnings: ['Start and destination are the same place.'] };
 

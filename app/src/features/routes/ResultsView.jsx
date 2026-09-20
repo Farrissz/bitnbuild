@@ -54,7 +54,7 @@ export default function ResultsView({ search, visibleRoutes, selectedId, onSelec
             <p className="text-[11px] text-slate-400 truncate">{origin.split(',')[0]} to {dest.split(',')[0]}</p>
           </div>
         </div>
-        {live ? (
+        {!routes.length ? null : live ? (
           <span className="shrink-0 text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full">
             <i className="fa-solid fa-circle-check mr-1" aria-hidden="true" />Live timings
           </span>

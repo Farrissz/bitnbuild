@@ -82,7 +82,7 @@ export default function SearchView({ origin, setOrigin, dest, setDest, prefs, se
             onChange={setDest}
             dot={<div className="w-6 h-6 rounded-full bg-spidey-red/20 border border-spidey-red/40 flex items-center justify-center shrink-0"><i className="fa-solid fa-location-dot text-[10px] text-spidey-red" aria-hidden="true" /></div>}
           />
-          <p className="text-[10px] text-slate-500 mt-3 pl-9">Any town, station or landmark works.</p>
+          <p className="text-[10px] text-slate-500 mt-3 pl-9">Any town, station or landmark in Kerala.</p>
           <button
             type="button"
             onClick={swap}
