@@ -1,5 +1,7 @@
 // server.js — HTTP wrapper so the frontend can call the routing module.
 require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const { planRoutes, autocomplete } = require('./routes');
@@ -34,8 +36,20 @@ app.get('/api/demo-pairs', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, googleKey: !!process.env.GOOGLE_MAPS_API_KEY, mock: process.env.USE_MOCK === 'true' });
+  res.json({
+    ok: true,
+    googleKey: !!process.env.GOOGLE_MAPS_API_KEY,
+    mock: process.env.USE_MOCK === 'true',
+    estimates: String(process.env.USE_ESTIMATES).toLowerCase() !== 'false',
+  });
 });
+
+// Serve the built frontend (app/dist) so the whole app runs from one URL: `npm run build` then `npm start`.
+const APP_DIST = path.join(__dirname, '..', 'app', 'dist');
+if (fs.existsSync(APP_DIST)) {
+  app.use(express.static(APP_DIST));
+  app.get(/^\/(?!api\/).*/, (req, res) => res.sendFile(path.join(APP_DIST, 'index.html')));
+}
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Routing API on http://localhost:${PORT}`));

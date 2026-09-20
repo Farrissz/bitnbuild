@@ -5,7 +5,7 @@
 // destination text contains any `match.dest` keyword (case-insensitive).
 // Pairs are one-directional. Swap in whatever places your demo script uses.
 //
-// Leg fields: mode (DRIVE | WALK | TRAIN | BUS), min, km, line, from, to, stops,
+// Leg fields: mode (DRIVE | WALK | AUTO | TRAIN | BUS | FERRY), min, km, line, from, to, stops,
 // waitBefore (minutes spent waiting before this leg starts).
 
 const DEMO_PAIRS = [
@@ -139,12 +139,14 @@ function findDemoPair(origin, dest) {
 function legInstruction(leg) {
   if (leg.mode === 'DRIVE') return leg.instruction || 'Drive';
   if (leg.mode === 'WALK') return leg.to ? `Walk to ${leg.to}` : 'Walk';
-  const kind = leg.mode === 'TRAIN' ? 'Train' : 'Bus';
+  if (leg.mode === 'AUTO') return leg.to ? `Auto rickshaw to ${leg.to}` : 'Auto rickshaw';
+  const kind = leg.mode === 'TRAIN' ? 'Train' : leg.mode === 'FERRY' ? 'Ferry' : 'Bus';
   return `${kind} ${leg.line}: ${leg.from} → ${leg.to}`;
 }
 
 // Turns one demo pair into route objects (not yet formatted — routes.js finishes them).
-function buildDemoRoutes(pair, now) {
+// estimate.js reuses this with source 'estimate'.
+function buildDemoRoutes(pair, now, source = 'demo') {
   const built = pair.options.map((opt) => {
     let t = now.getTime() + opt.startIn * 60000;
     const departure = new Date(t);
@@ -179,7 +181,7 @@ function buildDemoRoutes(pair, now) {
 
     return {
       mode: opt.mode,
-      source: 'demo',
+      source,
       summary: opt.summary,
       departure,
       arrival: new Date(t),
